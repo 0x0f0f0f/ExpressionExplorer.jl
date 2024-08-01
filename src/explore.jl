@@ -449,11 +449,31 @@ end
 explore_macrocalls!(_, macrocalls) = macrocalls
 
 
-function explore_macrocall!(ex::Expr, scopestate::ScopeState)
-    macrocalls = Set{FunctionName}()
-    explore_macrocalls!(ex, macrocalls)
-    return SymbolsState(;macrocalls)
+
+explore_macrocall_trick!(ex, scopestate::ScopeState) = ExpressionExplorer.explore!(ex, scopestate)
+
+function explore_macrocall_trick!(ex::Expr, scopestate::ScopeState)
+  if ex.head === :macrocall
+    args = [explore_macrocall_trick!(a, scopestate) for a in ex.args[3:end]]
+    isempty(args) && return SymbolsState()
+    foldl(union, args)
+  else
+    ExpressionExplorer.explore!(ex, scopestate)
+  end
 end
+
+function ExpressionExplorer.explore_macrocall!(ex::Expr, scopestate::ScopeState)
+  macrocalls = Set{FunctionName}()
+  ExpressionExplorer.explore_macrocalls!(ex, macrocalls)
+  explored = explore_macrocall_trick!(ex, scopestate)
+  return union(explored, SymbolsState(; macrocalls))
+end
+
+# function explore_macrocall!(ex::Expr, scopestate::ScopeState)
+#     macrocalls = Set{FunctionName}()
+#     explore_macrocalls!(ex, macrocalls)
+#     return SymbolsState(;macrocalls)
+# end
 
 function funcname_symstate!(funcname::FunctionName, scopestate::ScopeState)::SymbolsState
     if isempty(funcname.parts)
@@ -1180,7 +1200,4 @@ function compute_symbolreferences(ex::Any)::SymbolsState
 end
 
 @deprecate try_compute_symbolreferences(args...) compute_symbols_state(args...)
-
-
-
 
