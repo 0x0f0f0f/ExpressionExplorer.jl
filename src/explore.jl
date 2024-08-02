@@ -450,7 +450,7 @@ explore_macrocalls!(_, macrocalls) = macrocalls
 
 
 
-explore_macrocall_trick!(ex, scopestate::ScopeState) = ExpressionExplorer.explore!(ex, scopestate)
+explore_macrocall_trick!(ex, scopestate::ScopeState) = explore!(ex, scopestate)
 
 function explore_macrocall_trick!(ex::Expr, scopestate::ScopeState)
   if ex.head === :macrocall
@@ -458,13 +458,13 @@ function explore_macrocall_trick!(ex::Expr, scopestate::ScopeState)
     isempty(args) && return SymbolsState()
     foldl(union, args)
   else
-    ExpressionExplorer.explore!(ex, scopestate)
+    explore!(ex, scopestate)
   end
 end
 
-function ExpressionExplorer.explore_macrocall!(ex::Expr, scopestate::ScopeState)
+function explore_macrocall!(ex::Expr, scopestate::ScopeState)
   macrocalls = Set{FunctionName}()
-  ExpressionExplorer.explore_macrocalls!(ex, macrocalls)
+  explore_macrocalls!(ex, macrocalls)
   explored = explore_macrocall_trick!(ex, scopestate)
   return union(explored, SymbolsState(; macrocalls))
 end
